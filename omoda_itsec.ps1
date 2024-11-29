@@ -1,6 +1,47 @@
 # omoda_itsec.ps1
 # This script will be updated weekly
 
+#check 7zip version
+function Get-7ZipVersion {
+    $7zipPath = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall"
+    $keys = Get-ChildItem -Path $7zipPath
+    foreach ($key in $keys) {
+        $displayName = (Get-ItemProperty -Path $key.PSPath).DisplayName
+        if ($displayName -like "7-Zip*") {
+            return (Get-ItemProperty -Path $key.PSPath).DisplayVersion
+        }
+    }
+    return $null
+}
+
+# Check installed version
+$installedVersion = Get-7ZipVersion
+$latestVersion = [Version]"24.08"
+
+if ($installedVersion) {
+    $installedVersionObj = [Version]$installedVersion
+    
+    if ($installedVersionObj -lt $latestVersion) {
+        Write-Output "7-Zip version is older than $latestVersion. Updating now..."
+        # Define URL and installer path
+        $url = "https://www.7-zip.org/a/7z2408-x64.exe"
+        $installerPath = "$env:TEMP\7z2408-x64.exe"
+
+        # Download the installer
+        Invoke-WebRequest -Uri $url -OutFile $installerPath
+
+        # Run the installer silently
+        Start-Process -FilePath $installerPath -ArgumentList "/S" -Wait
+
+        Write-Output "7-Zip updated successfully."
+    } else {
+        #Write-Output "7-Zip is already up to date."
+    }
+} else {
+    #Write-Output "7-Zip is not installed."
+}
+
+
 $logFilePath = "C:\Omoda\itsec_log.txt"
 $date = Get-Date -Format "dd/MM/yyyy HH:mm:ss"
 "Log entry: $date" | Out-File -Append -FilePath $logFilePath
